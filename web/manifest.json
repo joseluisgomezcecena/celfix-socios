@@ -1,11 +1,11 @@
 {
-    "name": "celfix_socios",
-    "short_name": "celfix_socios",
+    "name": "Celfix Socios",
+    "short_name": "Celfix Socios",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "App Celfix Socios",
+    "description": "Programa de fidelidad Celfix",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

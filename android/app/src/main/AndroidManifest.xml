@@ -1,6 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Flutter solo la agrega a los manifests de debug/profile: sin esto el
+         build de release no puede llamar a la API. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application
-        android:label="celfix_socios"
+        android:label="Celfix Socios"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -40,6 +44,16 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Android 11+ exige declarar los esquemas que url_launcher abrirá:
+             maps_url de /locations y el botón Llamar. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.DIAL"/>
+            <data android:scheme="tel"/>
         </intent>
     </queries>
 </manifest>

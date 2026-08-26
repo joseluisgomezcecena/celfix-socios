@@ -28,12 +28,23 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+  flutter_localizations:
+    sdk: flutter
   flutter:
     sdk: flutter
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  dio: ^5.11.0
+  flutter_secure_storage: ^11.0.0
+  flutter_riverpod: ^3.3.2
+  go_router: ^17.5.0
+  qr_flutter: ^4.1.0
+  intl: ^0.20.2
+  url_launcher: ^6.3.2
+  cached_network_image: ^3.4.1
+  flutter_svg: ^2.3.0
 
 dev_dependencies:
   flutter_test:
@@ -45,6 +56,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_secure_storage_platform_interface: ^2.0.3
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -56,6 +68,24 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Se listan archivo por archivo a propósito: declarar la carpeta completa
+  # metería también el README y los originales sin usar en el bundle.
+  assets:
+    - assets/images/logo.svg
+    - assets/images/x.svg
+
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Poppins-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Poppins-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700
 
   # To add assets to your application, add an assets section, like this:
   # assets:

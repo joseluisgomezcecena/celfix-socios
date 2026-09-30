@@ -6,6 +6,7 @@ import '../state/providers.dart';
 import '../theme.dart';
 import '../widgets/async_view.dart';
 import '../widgets/celfix_header.dart';
+import '../widgets/premium.dart';
 import '../widgets/celfix_logo.dart';
 import '../widgets/promo_card.dart';
 import '../widgets/location_filter.dart';
@@ -39,7 +40,10 @@ class PromosTab extends ConsumerWidget {
               title: 'No hay promociones activas',
               subtitle: 'Prueba seleccionando otra sucursal o vuelve pronto.',
             ),
-            itemBuilder: (context, promo) => PromoCard(promo: promo),
+            itemBuilder: (context, promo) => PremiumGate(
+                isPremiumItem: promo.isPremium,
+                child: PromoCard(promo: promo),
+              ),
           ),
         ),
       ],

@@ -7,6 +7,7 @@ import 'package:celfix_socios/screens/repair_orders_screen.dart';
 import 'package:celfix_socios/state/auth_provider.dart';
 import 'package:celfix_socios/state/providers.dart';
 import 'package:celfix_socios/theme.dart';
+import 'package:celfix_socios/widgets/membership_card.dart';
 import 'package:celfix_socios/utils/secure_storage.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -46,9 +47,13 @@ class _FakeAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
-    const customer = '{"id":42,"name":"Mario Pérez","mobile":"6861702069",'
-        '"email":null,"membership_no":"9001000042",'
-        '"membership_expires_at":null}';
+    // Perfil completo: si faltan first_name/last_name/date_of_birth el guard
+    // manda a "Completa tu perfil" y ninguna de estas pantallas se alcanza.
+    const customer = '{"id":42,"name":"Mario Pérez","first_name":"Mario",'
+        '"last_name":"Pérez","date_of_birth":"1990-05-15",'
+        '"mobile":"6861702069","email":null,'
+        '"membership_no":"9001000042","membership_expires_at":null,'
+        '"is_premium":false,"photo_url":null,"profile_complete":true}';
 
     final body = switch (options.path) {
       final path when path.endsWith('/auth/login') =>
@@ -204,5 +209,75 @@ void main() {
     await tester.tap(find.text('ver compras'));
     await _settle(tester);
     expect(find.byType(PurchasesScreen), findsOneWidget);
+  });
+
+  testWidgets('sin sesión la barra inferior solo ofrece Inicio y Tiendas',
+      (tester) async {
+    final container = _container(_MemoryStorage());
+    addTearDown(container.dispose);
+    await _pumpApp(tester, container);
+    await container.read(authProvider.notifier).bootstrap();
+    await _settle(tester);
+
+    expect(find.text('Inicio'), findsOneWidget);
+    expect(find.text('Tiendas'), findsOneWidget);
+    expect(find.text('Promos'), findsNothing);
+    expect(find.text('Beneficios'), findsNothing);
+  });
+
+  testWidgets('sin sesión el menú lateral no expone secciones privadas',
+      (tester) async {
+    final container = _container(_MemoryStorage());
+    addTearDown(container.dispose);
+    await _pumpApp(tester, container);
+    await container.read(authProvider.notifier).bootstrap();
+    await _settle(tester);
+
+    await tester.tap(find.byIcon(Icons.menu));
+    await _settle(tester);
+
+    expect(find.text('Iniciar sesión'), findsOneWidget);
+    for (final hidden in const [
+      'Mis datos',
+      'Mis compras',
+      'Mis reparaciones',
+      'Cambiar contraseña',
+      'Cerrar sesión',
+    ]) {
+      expect(find.text(hidden), findsNothing, reason: '$hidden es privado');
+    }
+  });
+
+  testWidgets('con sesión vuelven las cuatro pestañas', (tester) async {
+    await _signedIn(tester);
+
+    expect(find.text('Inicio'), findsOneWidget);
+    expect(find.text('Tiendas'), findsOneWidget);
+    expect(find.text('Promos'), findsOneWidget);
+    expect(find.text('Beneficios'), findsOneWidget);
+  });
+
+  testWidgets('el QR está oculto hasta que se pide mostrarlo', (tester) async {
+    await _signedIn(tester);
+
+    // El número de membresía no debe quedar a la vista de entrada.
+    expect(find.byType(QrPanel), findsNothing);
+    expect(find.text('Tu código está oculto'), findsOneWidget);
+
+    // La ventana del test es más chica que un teléfono: sin esto el botón
+    // queda fuera de pantalla y el tap no llega.
+    await tester.ensureVisible(find.text('MOSTRAR QR'));
+    await _settle(tester);
+    await tester.tap(find.text('MOSTRAR QR'));
+    await _settle(tester);
+
+    expect(find.byType(QrPanel), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Ocultar código'));
+    await _settle(tester);
+    await tester.tap(find.text('Ocultar código'));
+    await _settle(tester);
+
+    expect(find.byType(QrPanel), findsNothing);
   });
 }

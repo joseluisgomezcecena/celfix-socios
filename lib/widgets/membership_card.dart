@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -5,18 +6,31 @@ import '../api/models/customer.dart';
 import '../theme.dart';
 import '../utils/formatters.dart';
 import 'celfix_logo.dart';
+import 'premium.dart';
 
-/// Tarjeta azul con el número de membresía, pensada para encimarse al header.
+/// Tarjeta de membresía, pensada para encimarse al header.
+///
+/// Es **una sola tarjeta** para socios registrados y premium: el fondo es el
+/// mismo para ambos. La única diferencia visual del premium es la pill dorada.
 class MembershipCard extends StatelessWidget {
   final Customer customer;
 
-  const MembershipCard({super.key, required this.customer});
+  /// Fondo que el admin sube desde el POS (`membership_card_background`).
+  /// Si es null se usa el degradado azul de marca.
+  final String? backgroundUrl;
+
+  const MembershipCard({
+    super.key,
+    required this.customer,
+    this.backgroundUrl,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final background = backgroundUrl;
+
     return Container(
       height: 168,
-      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [CelfixColors.blue, CelfixColors.blueDeep],
@@ -32,32 +46,75 @@ class MembershipCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        fit: StackFit.expand,
         children: [
-          // El SVG viene en cyan de marca; sobre el azul de la tarjeta se
-          // pierde, así que lo pintamos de blanco.
-          const CelfixLogo(height: 30, color: Colors.white),
-          const Spacer(),
-          Center(
-            child: Text(
-              customer.membershipNo,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 17,
-                fontWeight: FontWeight.w500,
-                letterSpacing: 1.2,
-                fontFeatures: [FontFeature.tabularFigures()],
+          if (background != null)
+            CachedNetworkImage(
+              imageUrl: background,
+              fit: BoxFit.cover,
+              // Mientras carga (o si falla) se ve el degradado de abajo: la
+              // tarjeta nunca queda en blanco.
+              placeholder: (context, url) => const SizedBox.shrink(),
+              errorWidget: (context, url, error) => const SizedBox.shrink(),
+            ),
+          // Velo oscuro: el fondo lo sube el admin y no sabemos qué tan claro
+          // será, así que garantizamos contraste para el texto blanco.
+          if (background != null)
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0x73000000), Color(0x33000000)],
+                  begin: Alignment.bottomLeft,
+                  end: Alignment.topRight,
+                ),
               ),
             ),
-          ),
-          const Spacer(),
-          const Text(
-            'Membresía',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
+          Padding(
+            padding: const EdgeInsets.all(22),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // El SVG viene en cyan de marca; sobre la tarjeta se
+                    // pierde, así que lo pintamos de blanco.
+                    const Expanded(
+                      // Align: dentro de Expanded el logo se centraría, y el
+                      // wordmark va pegado a la izquierda.
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: CelfixLogo(height: 30, color: Colors.white),
+                      ),
+                    ),
+                    if (customer.isPremium) const PremiumBadge(),
+                  ],
+                ),
+                const Spacer(),
+                Center(
+                  child: Text(
+                    customer.membershipNo,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 1.2,
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                const Text(
+                  'Membresía',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
         ],

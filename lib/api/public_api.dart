@@ -1,4 +1,5 @@
 import 'api_client.dart';
+import 'models/app_designs.dart';
 import 'models/benefit.dart';
 import 'models/json.dart';
 import 'models/location.dart';
@@ -10,6 +11,13 @@ class PublicApi {
   final ApiClient _api;
 
   PublicApi(this._api);
+
+  /// Imágenes configurables del POS. Si una key no viene, la app usa su
+  /// diseño local.
+  Future<AppDesigns> designs() => _api.guard(() async {
+        final response = await _api.dio.get<dynamic>('/app-designs');
+        return AppDesigns.fromJson(_api.unwrap(response));
+      });
 
   Future<List<StoreLocation>> locations() => _api.guard(() async {
         final response = await _api.dio.get<dynamic>('/locations');

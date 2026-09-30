@@ -10,6 +10,8 @@ import '../widgets/async_view.dart';
 import '../widgets/celfix_header.dart';
 import '../widgets/celfix_logo.dart';
 import '../widgets/membership_card.dart';
+import '../widgets/promos_carousel.dart';
+import '../widgets/qr_reveal.dart';
 
 /// Pestaña "Inicio": la credencial del socio y su código para caja.
 class HomeTab extends ConsumerWidget {
@@ -47,7 +49,13 @@ class HomeTab extends ConsumerWidget {
           children: [
             CelfixHeader(
               greeting: '¡Hola ${customer.name.split(' ').first}!',
-              overlay: MembershipCard(customer: customer),
+              overlay: MembershipCard(
+                customer: customer,
+                backgroundUrl: ref
+                    .watch(appDesignsProvider)
+                    .value
+                    ?.membershipCardBackground,
+              ),
               overlayOverflow: 152,
             ),
             const SizedBox(height: 16),
@@ -60,14 +68,18 @@ class HomeTab extends ConsumerWidget {
                 onSeeRepairs: () => context.push(Routes.repairOrders),
               ),
             ),
-            const SizedBox(height: 20),
-            QrPanel(customer: customer),
-            if (customer.isExpired) ...[
+            const SizedBox(height: 16),
+            QrReveal(customer: customer),
+            const SizedBox(height: 22),
+            PromosCarousel(
+              onSeeAll: () => context.go(Routes.promos),
+            ),
+            if (customer.subscriptionLapsed) ...[
               const SizedBox(height: 16),
               const Padding(
                 padding:
                     EdgeInsets.symmetric(horizontal: CelfixShape.pageInset),
-                child: _ExpiredNotice(),
+                child: _LapsedNotice(),
               ),
             ],
             if (auth.usingDefaultPassword) ...[
@@ -88,8 +100,8 @@ class HomeTab extends ConsumerWidget {
   }
 }
 
-class _ExpiredNotice extends StatelessWidget {
-  const _ExpiredNotice();
+class _LapsedNotice extends StatelessWidget {
+  const _LapsedNotice();
 
   @override
   Widget build(BuildContext context) {
@@ -105,7 +117,7 @@ class _ExpiredNotice extends StatelessWidget {
           SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Tu membresía está vencida. Renuévala en cualquier sucursal.',
+              'Tu suscripción venció. Renuévala en cualquier sucursal para recuperar tus beneficios Premium.',
               style: TextStyle(color: CelfixColors.danger, fontSize: 13),
             ),
           ),
@@ -174,7 +186,8 @@ class _GuestHome extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Inicia sesión para ver tu código de socio, tus compras y tus reparaciones.',
+                'Inicia sesión para ver tu código de socio, tus promociones, '
+                'beneficios, compras y reparaciones.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: CelfixColors.inkSoft, fontSize: 14),
               ),

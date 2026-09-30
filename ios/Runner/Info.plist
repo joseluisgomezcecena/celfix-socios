@@ -46,6 +46,11 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<!-- url_launcher en iOS solo puede abrir esquemas declarados aqui -->
+	<!-- image_picker: iOS rechaza la app sin estas descripciones -->
+	<key>NSCameraUsageDescription</key>
+	<string>Celfix Socios usa la cámara para que puedas tomar tu foto de perfil.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Celfix Socios accede a tus fotos para que elijas tu foto de perfil.</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>tel</string>

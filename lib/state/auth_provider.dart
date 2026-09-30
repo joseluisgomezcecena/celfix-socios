@@ -139,6 +139,12 @@ class AuthNotifier extends Notifier<AuthState> {
     _invalidateCustomerData();
   }
 
+  /// Reemplaza el customer con el que devolvió el servidor (PUT /me, foto).
+  /// Es el único camino: nunca mutamos campos del customer a mano.
+  void setCustomer(Customer customer) {
+    state = state.copyWith(customer: customer);
+  }
+
   Future<void> refreshProfile() async {
     final customer = await _customerApi.me();
     state = state.copyWith(customer: customer);

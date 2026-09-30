@@ -175,7 +175,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     TextButton(
                       onPressed: () => context.go(Routes.home),
-                      child: const Text('Ver sucursales y promos sin cuenta'),
+                      child: const Text('Ver sucursales sin cuenta'),
                     ),
                   ],
                 ),

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/api_client.dart';
 import '../api/auth_api.dart';
 import '../api/customer_api.dart';
+import '../api/models/app_designs.dart';
 import '../api/models/benefit.dart';
 import '../api/models/customer.dart';
 import '../api/models/location.dart';
@@ -48,6 +49,16 @@ class SelectedLocationNotifier extends Notifier<int?> {
 final selectedLocationProvider =
     NotifierProvider<SelectedLocationNotifier, int?>(
         SelectedLocationNotifier.new);
+
+/// Imágenes que el admin sube desde el POS. Si el endpoint falla o la key no
+/// existe, la app usa su diseño local: nunca bloquea la pantalla.
+final appDesignsProvider = FutureProvider<AppDesigns>((ref) async {
+  try {
+    return await ref.watch(publicApiProvider).designs();
+  } on Object {
+    return const AppDesigns.empty();
+  }
+});
 
 final locationsProvider = FutureProvider<List<StoreLocation>>(
   (ref) => ref.watch(publicApiProvider).locations(),

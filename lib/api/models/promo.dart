@@ -8,6 +8,11 @@ class Promo {
   final DateTime? startsAt;
   final DateTime? endsAt;
   final int? targetLocationId;
+
+  /// Contenido exclusivo de suscriptores. Los no premium igual lo ven, pero
+  /// en gris con el aviso de suscripción: es embudo de conversión, no un
+  /// filtro.
+  final bool isPremium;
   final String? imageUrl;
 
   const Promo({
@@ -18,6 +23,7 @@ class Promo {
     required this.startsAt,
     required this.endsAt,
     required this.targetLocationId,
+    required this.isPremium,
     required this.imageUrl,
   });
 
@@ -29,6 +35,7 @@ class Promo {
         startsAt: DateTime.tryParse(asString(json['starts_at'])),
         endsAt: DateTime.tryParse(asString(json['ends_at'])),
         targetLocationId: asIntOrNull(json['target_location_id']),
+        isPremium: asBool(json['is_premium']),
         imageUrl: asStringOrNull(json['image_url']),
       );
 

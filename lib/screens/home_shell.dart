@@ -7,21 +7,50 @@ import '../state/auth_provider.dart';
 import '../theme.dart';
 import '../widgets/celfix_logo.dart';
 
-/// Shell de 4 pestañas. Cada rama conserva su estado de scroll gracias al
+/// Índices de las ramas del StatefulShellRoute, en el orden en que están
+/// declaradas en el router.
+class _Branch {
+  const _Branch._();
+
+  static const home = 0;
+  static const locations = 1;
+  static const promos = 2;
+  static const benefits = 3;
+}
+
+/// Shell de pestañas. Cada rama conserva su estado de scroll gracias al
 /// IndexedStack de StatefulShellRoute.
+///
+/// Sin sesión solo se ofrecen Inicio y Tiendas: Promos y Beneficios quedan
+/// detrás del login.
 class HomeShell extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
 
   const HomeShell({super.key, required this.navigationShell});
 
-  void _onTap(int index) => navigationShell.goBranch(
-        index,
-        // Tocar la pestaña activa regresa a su raíz.
-        initialLocation: index == navigationShell.currentIndex,
-      );
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isAuthenticated = ref.watch(authProvider).isAuthenticated;
+
+    // Las ramas del router siempre son cuatro; aquí solo elegimos cuáles se
+    // muestran, y traducimos el índice visible al índice de la rama real.
+    final branches = isAuthenticated
+        ? const [
+            _Branch.home,
+            _Branch.locations,
+            _Branch.promos,
+            _Branch.benefits,
+          ]
+        : const [_Branch.home, _Branch.locations];
+
+    final destinations = [
+      for (final branch in branches) _destinations[branch]!,
+    ];
+
+    // Si el invitado venía de una pestaña ya no visible, marcamos Inicio.
+    final currentVisible = branches.indexOf(navigationShell.currentIndex);
+    final selectedIndex = currentVisible == -1 ? 0 : currentVisible;
+
     return Scaffold(
       drawer: const _CelfixDrawer(),
       body: navigationShell,
@@ -32,32 +61,41 @@ class HomeShell extends ConsumerWidget {
         child: SafeArea(
           top: false,
           child: NavigationBar(
-            selectedIndex: navigationShell.currentIndex,
-            onDestinationSelected: _onTap,
-            destinations: const [
-              NavigationDestination(
-                icon: Icon(Icons.account_circle_outlined),
-                label: 'Inicio',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.location_on_outlined),
-                label: 'Tiendas',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.local_fire_department_outlined),
-                label: 'Promos',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.workspace_premium_outlined),
-                label: 'Beneficios',
-              ),
-            ],
+            selectedIndex: selectedIndex,
+            onDestinationSelected: (index) {
+              final branch = branches[index];
+              navigationShell.goBranch(
+                branch,
+                // Tocar la pestaña activa regresa a su raíz.
+                initialLocation: branch == navigationShell.currentIndex,
+              );
+            },
+            destinations: destinations,
           ),
         ),
       ),
     );
   }
 }
+
+const _destinations = <int, NavigationDestination>{
+  _Branch.home: NavigationDestination(
+    icon: Icon(Icons.account_circle_outlined),
+    label: 'Inicio',
+  ),
+  _Branch.locations: NavigationDestination(
+    icon: Icon(Icons.location_on_outlined),
+    label: 'Tiendas',
+  ),
+  _Branch.promos: NavigationDestination(
+    icon: Icon(Icons.local_fire_department_outlined),
+    label: 'Promos',
+  ),
+  _Branch.benefits: NavigationDestination(
+    icon: Icon(Icons.workspace_premium_outlined),
+    label: 'Beneficios',
+  ),
+};
 
 class _CelfixDrawer extends ConsumerWidget {
   const _CelfixDrawer();
@@ -98,6 +136,11 @@ class _CelfixDrawer extends ConsumerWidget {
                 children: [
                   if (auth.isAuthenticated) ...[
                     _DrawerItem(
+                      icon: Icons.person_outline,
+                      label: 'Mis datos',
+                      onTap: () => _go(context, Routes.editProfile),
+                    ),
+                    _DrawerItem(
                       icon: Icons.receipt_long_outlined,
                       label: 'Mis compras',
                       onTap: () => _go(context, Routes.purchases),
@@ -121,7 +164,26 @@ class _CelfixDrawer extends ConsumerWidget {
                         await ref.read(authProvider.notifier).logout();
                       },
                     ),
-                  ] else
+                  ] else ...[
+                    // Sin sesión el menú refleja lo mismo que la barra de
+                    // abajo: nada personal, solo lo público.
+                    _DrawerItem(
+                      icon: Icons.account_circle_outlined,
+                      label: 'Inicio',
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.go(Routes.home);
+                      },
+                    ),
+                    _DrawerItem(
+                      icon: Icons.location_on_outlined,
+                      label: 'Tiendas',
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.go(Routes.locations);
+                      },
+                    ),
+                    const Divider(height: 24),
                     _DrawerItem(
                       icon: Icons.login,
                       label: 'Iniciar sesión',
@@ -130,6 +192,7 @@ class _CelfixDrawer extends ConsumerWidget {
                         context.go(Routes.login);
                       },
                     ),
+                  ],
                 ],
               ),
             ),

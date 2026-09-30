@@ -4,6 +4,7 @@ import 'package:celfix_socios/api/api_client.dart';
 import 'package:celfix_socios/router.dart';
 import 'package:celfix_socios/screens/home_tab.dart';
 import 'package:celfix_socios/screens/login_screen.dart';
+import 'package:celfix_socios/screens/profile_form_screen.dart';
 import 'package:celfix_socios/state/auth_provider.dart';
 import 'package:celfix_socios/state/providers.dart';
 import 'package:celfix_socios/theme.dart';
@@ -43,15 +44,25 @@ class _MemoryStorage implements SecureStorage {
 
 /// Backend simulado que responde como el POS en el flujo de sesión.
 class _FakeAdapter implements HttpClientAdapter {
+  _FakeAdapter({this.profileComplete = true});
+
+  /// Permite simular un socio que aún no llenó nombre y fecha de nacimiento.
+  final bool profileComplete;
+
   @override
   Future<ResponseBody> fetch(
     RequestOptions options,
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
-    const customer = '{"id":42,"name":"Mario Pérez","mobile":"6861702069",'
-        '"email":null,"membership_no":"9001000042",'
-        '"membership_expires_at":null}';
+    final customer = '{"id":42,"name":"Mario Pérez",'
+        '"first_name":${profileComplete ? '"Mario"' : 'null'},'
+        '"last_name":${profileComplete ? '"Pérez"' : 'null'},'
+        '"date_of_birth":${profileComplete ? '"1990-05-15"' : 'null'},'
+        '"mobile":"6861702069","email":null,'
+        '"membership_no":"9001000042","membership_expires_at":null,'
+        '"is_premium":false,"photo_url":null,'
+        '"profile_complete":$profileComplete}';
 
     final body = switch (options.path) {
       final path when path.endsWith('/auth/login') =>
@@ -74,12 +85,17 @@ class _FakeAdapter implements HttpClientAdapter {
   void close({bool force = false}) {}
 }
 
-ProviderContainer _container(SecureStorage storage) => ProviderContainer(
+ProviderContainer _container(
+  SecureStorage storage, {
+  bool profileComplete = true,
+}) =>
+    ProviderContainer(
       overrides: [
         secureStorageProvider.overrideWithValue(storage),
         apiClientProvider.overrideWith((ref) {
           final client = ApiClient(ref.watch(secureStorageProvider));
-          client.dio.httpClientAdapter = _FakeAdapter();
+          client.dio.httpClientAdapter =
+              _FakeAdapter(profileComplete: profileComplete);
           return client;
         }),
       ],
@@ -187,5 +203,66 @@ void main() {
 
     expect(container.read(authProvider).isAuthenticated, isFalse);
     expect(find.text('INICIAR SESIÓN'), findsOneWidget);
+  });
+
+  testWidgets('con el perfil incompleto la app obliga a completarlo',
+      (tester) async {
+    final storage = _MemoryStorage();
+    await storage.writeToken('tok-123');
+
+    final container = _container(storage, profileComplete: false);
+    addTearDown(container.dispose);
+    await _pumpApp(tester, container);
+
+    await _network(
+      tester,
+      () => container.read(authProvider.notifier).bootstrap(),
+    );
+    await _settle(tester);
+
+    // No debe poder quedarse en Inicio con el perfil a medias.
+    expect(find.byType(ProfileFormScreen), findsOneWidget);
+    expect(find.byType(HomeTab), findsNothing);
+    expect(find.text('Completa tu perfil'), findsOneWidget);
+  });
+
+  testWidgets('con el perfil completo entra normal a Inicio', (tester) async {
+    final storage = _MemoryStorage();
+    await storage.writeToken('tok-123');
+
+    final container = _container(storage);
+    addTearDown(container.dispose);
+    await _pumpApp(tester, container);
+
+    await _network(
+      tester,
+      () => container.read(authProvider.notifier).bootstrap(),
+    );
+    await _settle(tester);
+
+    expect(find.byType(ProfileFormScreen), findsNothing);
+    expect(find.byType(HomeTab), findsOneWidget);
+  });
+
+  testWidgets('un invitado no entra a promos ni beneficios por URL',
+      (tester) async {
+    final container = _container(_MemoryStorage());
+    addTearDown(container.dispose);
+    await _pumpApp(tester, container);
+
+    await container.read(authProvider.notifier).bootstrap();
+    await _settle(tester);
+
+    // En Web la URL se puede teclear, así que no basta con esconder la
+    // pestaña: el router tiene que rechazar la ruta.
+    for (final route in [Routes.promos, Routes.benefits]) {
+      container.read(routerProvider).go(route);
+      await _settle(tester);
+      expect(
+        find.byType(LoginScreen),
+        findsOneWidget,
+        reason: '$route debe exigir sesión',
+      );
+    }
   });
 }

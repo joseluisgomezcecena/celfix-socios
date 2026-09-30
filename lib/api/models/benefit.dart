@@ -16,6 +16,11 @@ class Benefit {
   final String? conditions;
   final int? targetLocationId;
 
+  /// Contenido exclusivo de suscriptores. Los no premium igual lo ven, pero
+  /// en gris con el aviso de suscripción: es embudo de conversión, no un
+  /// filtro.
+  final bool isPremium;
+
   const Benefit({
     required this.id,
     required this.title,
@@ -27,6 +32,7 @@ class Benefit {
     required this.minPurchase,
     required this.conditions,
     required this.targetLocationId,
+    required this.isPremium,
   });
 
   factory Benefit.fromJson(Map<String, dynamic> json) => Benefit(
@@ -40,6 +46,7 @@ class Benefit {
         minPurchase: asDoubleOrNull(json['min_purchase']),
         conditions: asStringOrNull(json['conditions']),
         targetLocationId: asIntOrNull(json['target_location_id']),
+        isPremium: asBool(json['is_premium']),
       );
 
   bool get isGlobal => targetLocationId == null;

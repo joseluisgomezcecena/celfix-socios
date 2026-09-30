@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 import 'api_client.dart';
 import 'models/customer.dart';
 import 'models/json.dart';
@@ -16,6 +18,50 @@ class CustomerApi {
         final json = _api.unwrap(response);
         return Customer.fromJson(
             (json['customer'] as Map).cast<String, dynamic>());
+      });
+
+  /// Actualiza los datos personales. El backend sincroniza el `name` interno
+  /// del POS como "first_name last_name" y devuelve el customer completo.
+  Future<Customer> updateProfile({
+    required String firstName,
+    required String lastName,
+    required DateTime dateOfBirth,
+    String? email,
+  }) =>
+      _api.guard(() async {
+        final response = await _api.dio.put<dynamic>(
+          '/me',
+          data: {
+            'first_name': firstName,
+            'last_name': lastName,
+            // El backend espera YYYY-MM-DD, no un ISO con hora.
+            'date_of_birth': _isoDate(dateOfBirth),
+            // Cadena vacía = borrar el correo; omitirlo lo dejaría igual.
+            'email': email ?? '',
+          },
+        );
+        final json = _api.unwrap(response);
+        return Customer.fromJson(
+            (json['customer'] as Map).cast<String, dynamic>());
+      });
+
+  /// Sube la foto de perfil. Máx 5 MB; el backend la redimensiona a 800×800 y
+  /// la convierte a JPEG. Devuelve la URL nueva.
+  Future<String?> uploadPhoto({
+    required List<int> bytes,
+    required String filename,
+  }) =>
+      _api.guard(() async {
+        final form = FormData.fromMap({
+          'photo': MultipartFile.fromBytes(bytes, filename: filename),
+        });
+        final response = await _api.dio.post<dynamic>('/me/photo', data: form);
+        return asStringOrNull(_api.unwrap(response)['photo_url']);
+      });
+
+  Future<void> deletePhoto() => _api.guard(() async {
+        final response = await _api.dio.delete<dynamic>('/me/photo');
+        _api.unwrap(response);
       });
 
   Future<PurchasePage> purchases({int page = 1}) => _api.guard(() async {
@@ -54,3 +100,9 @@ class CustomerApi {
         return asMapList(json['data']).map(RepairOrder.fromJson).toList();
       });
 }
+
+/// El backend valida `date_of_birth` con formato YYYY-MM-DD.
+String _isoDate(DateTime date) =>
+    '${date.year.toString().padLeft(4, '0')}-'
+    '${date.month.toString().padLeft(2, '0')}-'
+    '${date.day.toString().padLeft(2, '0')}';

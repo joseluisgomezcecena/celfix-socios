@@ -7,6 +7,7 @@ import '../theme.dart';
 import '../widgets/async_view.dart';
 import '../widgets/benefit_card.dart';
 import '../widgets/celfix_header.dart';
+import '../widgets/premium.dart';
 import '../widgets/celfix_logo.dart';
 import '../widgets/location_filter.dart';
 
@@ -39,7 +40,10 @@ class BenefitsTab extends ConsumerWidget {
               title: 'Sin beneficios publicados',
               subtitle: 'Prueba seleccionando otra sucursal.',
             ),
-            itemBuilder: (context, benefit) => BenefitCard(benefit: benefit),
+            itemBuilder: (context, benefit) => PremiumGate(
+                isPremiumItem: benefit.isPremium,
+                child: BenefitCard(benefit: benefit),
+              ),
           ),
         ),
       ],

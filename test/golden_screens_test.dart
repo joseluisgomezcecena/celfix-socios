@@ -8,13 +8,18 @@ import 'package:celfix_socios/api/models/customer.dart';
 import 'package:celfix_socios/api/models/location.dart';
 import 'package:celfix_socios/api/models/promo.dart';
 import 'package:celfix_socios/screens/login_screen.dart';
+import 'package:celfix_socios/state/auth_provider.dart';
 import 'package:celfix_socios/theme.dart';
 import 'package:celfix_socios/widgets/benefit_card.dart';
 import 'package:celfix_socios/widgets/celfix_header.dart';
 import 'package:celfix_socios/widgets/celfix_logo.dart';
 import 'package:celfix_socios/widgets/location_card.dart';
 import 'package:celfix_socios/widgets/membership_card.dart';
+import 'package:celfix_socios/widgets/premium.dart';
+import 'package:celfix_socios/state/providers.dart';
 import 'package:celfix_socios/widgets/promo_card.dart';
+import 'package:celfix_socios/widgets/promos_carousel.dart';
+import 'package:celfix_socios/widgets/qr_reveal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -66,6 +71,25 @@ void main() {
     await expectLater(
       find.byType(_LocationsPreview),
       matchesGoldenFile('goldens/tiendas.png'),
+    );
+  });
+
+  testWidgets('inicio premium: tarjeta con pill dorada', (tester) async {
+    await _pump(tester, const _PremiumHomePreview(),
+        size: const Size(430, 560));
+    await expectLater(
+      find.byType(_PremiumHomePreview),
+      matchesGoldenFile('goldens/inicio_premium.png'),
+    );
+  });
+
+  testWidgets('beneficios: item premium bloqueado para no suscriptor',
+      (tester) async {
+    await _pump(tester, const _GatedBenefitsPreview(),
+        size: const Size(430, 420));
+    await expectLater(
+      find.byType(_GatedBenefitsPreview),
+      matchesGoldenFile('goldens/beneficios_bloqueado.png'),
     );
   });
 
@@ -141,14 +165,23 @@ Future<void> _loadFont(String family, List<String> paths) async {
 
 // --- Datos de muestra (los mismos que devuelve el POS) ---------------------
 
-final _customer = Customer(
-  id: 122,
-  name: 'Mario Pérez',
-  mobile: '6861702069',
-  email: null,
-  membershipNo: '9001000122',
-  membershipExpiresAt: DateTime(2027, 7, 4),
-);
+Customer _customerJson({bool isPremium = false}) => Customer.fromJson({
+      'id': 122,
+      'name': 'Mario Pérez',
+      'first_name': 'Mario',
+      'last_name': 'Pérez',
+      'mobile': '6861702069',
+      'email': null,
+      'date_of_birth': '1990-05-15',
+      'membership_no': '9001000122',
+      'membership_expires_at': isPremium ? '2027-07-04' : null,
+      'is_premium': isPremium,
+      'photo_url': null,
+      'profile_complete': true,
+    });
+
+final _customer = _customerJson();
+final _premiumCustomer = _customerJson(isPremium: true);
 
 final _benefits = [
   Benefit.fromJson(const {
@@ -177,6 +210,26 @@ final _benefits = [
     'display_value': '\$100',
   }),
 ];
+
+final _promos = [
+  _promo,
+  Promo.fromJson(const {
+    'id': 2,
+    'title': '20% en cambio de batería',
+    'description': 'Todos los modelos',
+    'category': 'REPARACIÓN',
+    'ends_at': '2026-10-15',
+  }),
+];
+
+final _premiumBenefit = Benefit.fromJson(const {
+  'id': 9,
+  'title': '3x2 en fundas premium',
+  'description': 'Exclusivo para socios Premium',
+  'value_type': 'text',
+  'display_value': '3x2',
+  'is_premium': true,
+});
 
 final _location = StoreLocation.fromJson(const {
   'id': 6,
@@ -212,6 +265,19 @@ class _HomePreview extends StatelessWidget {
   const _HomePreview();
 
   @override
+  Widget build(BuildContext context) => ProviderScope(
+        overrides: [
+          authProvider.overrideWith(() => _FakeAuth(_customer)),
+          promosProvider.overrideWith((ref) async => _promos),
+        ],
+        child: const _HomeBody(),
+      );
+}
+
+class _HomeBody extends StatelessWidget {
+  const _HomeBody();
+
+  @override
   Widget build(BuildContext context) => _Preview(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -232,8 +298,10 @@ class _HomePreview extends StatelessWidget {
                 onSeeRepairs: () {},
               ),
             ),
-            const SizedBox(height: 20),
-            QrPanel(customer: _customer),
+            const SizedBox(height: 16),
+            QrReveal(customer: _customer),
+            const SizedBox(height: 22),
+            const PromosCarousel(),
             const SizedBox(height: 32),
           ],
         ),
@@ -369,4 +437,80 @@ class _LoginPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       const ProviderScope(child: LoginScreen());
+}
+
+/// Sesión simulada para los widgets que consultan si el socio es premium.
+class _FakeAuth extends AuthNotifier {
+  _FakeAuth(this._customer);
+
+  final Customer _customer;
+
+  @override
+  AuthState build() => AuthState(
+        status: AuthStatus.authenticated,
+        customer: _customer,
+      );
+}
+
+/// Solo la credencial: es donde se ve la diferencia entre premium y no.
+class _PremiumHomePreview extends StatelessWidget {
+  const _PremiumHomePreview();
+
+  @override
+  Widget build(BuildContext context) => _Preview(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            CelfixHeader(
+              greeting: '¡Hola Mario!',
+              overlay: MembershipCard(customer: _premiumCustomer),
+              overlayOverflow: 152,
+              onMenuTap: () {},
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: CelfixShape.pageInset),
+              child: MembershipIdentity(
+                customer: _premiumCustomer,
+                onSeePurchases: () {},
+                onSeeRepairs: () {},
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+/// Un beneficio normal y uno premium, vistos por alguien NO suscrito.
+class _GatedBenefitsPreview extends StatelessWidget {
+  const _GatedBenefitsPreview();
+
+  @override
+  Widget build(BuildContext context) => ProviderScope(
+        overrides: [authProvider.overrideWith(() => _FakeAuth(_customer))],
+        child: _Preview(
+          child: Column(
+            children: [
+              CelfixHeader(greeting: 'Beneficios', onMenuTap: () {}),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(
+                      CelfixShape.pageInset, 20, CelfixShape.pageInset, 32),
+                  children: [
+                    const SectionTitle(text: 'Beneficios Socios CELFIX'),
+                    const SizedBox(height: 12),
+                    BenefitCard(benefit: _benefits.first),
+                    const SizedBox(height: 12),
+                    PremiumGate(
+                      isPremiumItem: _premiumBenefit.isPremium,
+                      child: BenefitCard(benefit: _premiumBenefit),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
 }

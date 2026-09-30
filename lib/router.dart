@@ -8,6 +8,7 @@ import 'screens/home_shell.dart';
 import 'screens/home_tab.dart';
 import 'screens/locations_tab.dart';
 import 'screens/login_screen.dart';
+import 'screens/profile_form_screen.dart';
 import 'screens/promos_tab.dart';
 import 'screens/purchase_detail_screen.dart';
 import 'screens/purchases_screen.dart';
@@ -27,6 +28,8 @@ class Routes {
   static const promos = '/promos';
   static const benefits = '/beneficios';
   static const changePassword = '/cambiar-password';
+  static const completeProfile = '/completa-tu-perfil';
+  static const editProfile = '/mis-datos';
   static const purchases = '/compras';
   static const repairOrders = '/reparaciones';
 
@@ -35,7 +38,10 @@ class Routes {
 
 /// Rutas que exigen sesión. Todo lo demás es navegable como invitado.
 const _protectedRoutes = {
+  Routes.promos,
+  Routes.benefits,
   Routes.changePassword,
+  Routes.editProfile,
   Routes.purchases,
   Routes.repairOrders,
 };
@@ -81,6 +87,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Ya logueado: no tiene sentido ver login/registro.
       if (isAuthRoute && auth.isAuthenticated) return Routes.home;
 
+      // Perfil incompleto: el backend pide nombre, apellidos y fecha de
+      // nacimiento antes de dejar usar el resto de la app.
+      final needsProfile = auth.isAuthenticated &&
+          auth.customer != null &&
+          !auth.customer!.profileComplete;
+      if (needsProfile && location != Routes.completeProfile) {
+        return Routes.completeProfile;
+      }
+      if (!needsProfile && location == Routes.completeProfile) {
+        return Routes.home;
+      }
+
       return null;
     },
     routes: [
@@ -95,6 +113,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.register,
         builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: Routes.completeProfile,
+        builder: (context, state) => const ProfileFormScreen(mandatory: true),
+      ),
+      GoRoute(
+        path: Routes.editProfile,
+        builder: (context, state) => const ProfileFormScreen(),
       ),
       GoRoute(
         path: Routes.changePassword,

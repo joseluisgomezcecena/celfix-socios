@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'screens/benefits_tab.dart';
 import 'screens/change_password_screen.dart';
+import 'screens/courses_screen.dart';
 import 'screens/home_shell.dart';
 import 'screens/home_tab.dart';
 import 'screens/locations_tab.dart';
@@ -32,12 +33,14 @@ class Routes {
   static const editProfile = '/mis-datos';
   static const purchases = '/compras';
   static const repairOrders = '/reparaciones';
+  static const courses = '/cursos';
 
   static String purchaseDetail(int id) => '/compras/$id';
 }
 
 /// Rutas que exigen sesión. Todo lo demás es navegable como invitado.
 const _protectedRoutes = {
+  Routes.courses,
   Routes.promos,
   Routes.benefits,
   Routes.changePassword,
@@ -137,6 +140,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ),
         ],
+      ),
+      GoRoute(
+        path: Routes.courses,
+        builder: (context, state) => const CoursesScreen(),
       ),
       GoRoute(
         path: Routes.repairOrders,

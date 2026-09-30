@@ -141,6 +141,11 @@ class _CelfixDrawer extends ConsumerWidget {
                       onTap: () => _go(context, Routes.editProfile),
                     ),
                     _DrawerItem(
+                      icon: Icons.school_outlined,
+                      label: 'Cursos y talleres',
+                      onTap: () => _go(context, Routes.courses),
+                    ),
+                    _DrawerItem(
                       icon: Icons.receipt_long_outlined,
                       label: 'Mis compras',
                       onTap: () => _go(context, Routes.purchases),

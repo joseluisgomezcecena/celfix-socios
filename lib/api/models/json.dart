@@ -48,3 +48,20 @@ List<Map<String, dynamic>> asMapList(Object? value) {
   if (value is! List) return const [];
   return value.whereType<Map>().map((e) => e.cast<String, dynamic>()).toList();
 }
+
+/// Convierte una fecha ISO 8601 **con** offset a la hora de pared que trae.
+///
+/// El módulo de cursos manda `"2026-10-15T10:00:00-07:00"`, a diferencia del
+/// resto de la API que manda fechas sin zona. `DateTime.parse` lo convertiría
+/// a UTC (17:00Z) y `toLocal()` lo movería según la zona del teléfono: un
+/// socio con el celular en otra zona vería una hora distinta a la que dice el
+/// POS. Aquí recortamos el offset y conservamos la hora tal cual la programó
+/// el admin, que es lo que va a pasar en la tienda.
+DateTime? asWallClock(Object? value) {
+  final raw = asStringOrNull(value);
+  if (raw == null) return null;
+
+  // Corta la zona final: "Z", "+07:00", "-0700".
+  final match = RegExp(r'^(.*?)(?:Z|[+-]\d{2}:?\d{2})$').firstMatch(raw.trim());
+  return DateTime.tryParse(match != null ? match.group(1)! : raw);
+}

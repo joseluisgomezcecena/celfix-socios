@@ -10,6 +10,7 @@ import '../widgets/async_view.dart';
 import '../widgets/celfix_header.dart';
 import '../widgets/celfix_logo.dart';
 import '../widgets/membership_card.dart';
+import '../widgets/courses_carousel.dart';
 import '../widgets/promos_carousel.dart';
 import '../widgets/qr_reveal.dart';
 
@@ -73,6 +74,11 @@ class HomeTab extends ConsumerWidget {
             const SizedBox(height: 22),
             PromosCarousel(
               onSeeAll: () => context.go(Routes.promos),
+            ),
+            const SizedBox(height: 26),
+            CoursesCarousel(
+              onSeeAll: () => context.push(Routes.courses),
+              onTapCourse: (_) => context.push(Routes.courses),
             ),
             if (customer.subscriptionLapsed) ...[
               const SizedBox(height: 16),

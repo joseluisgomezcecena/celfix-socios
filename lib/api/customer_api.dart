@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import 'api_client.dart';
+import 'models/course.dart';
 import 'models/customer.dart';
 import 'models/json.dart';
 import 'models/purchase.dart';
@@ -61,6 +62,32 @@ class CustomerApi {
 
   Future<void> deletePhoto() => _api.guard(() async {
         final response = await _api.dio.delete<dynamic>('/me/photo');
+        _api.unwrap(response);
+      });
+
+  /// Cursos donde el socio ya está inscrito.
+  Future<List<Course>> myCourses({bool includePast = false}) =>
+      _api.guard(() async {
+        final response = await _api.dio.get<dynamic>(
+          '/me/courses',
+          queryParameters: {'include_past': includePast ? 1 : 0},
+        );
+        return asMapList(_api.unwrap(response)['data'])
+            .map(Course.fromJson)
+            .toList();
+      });
+
+  /// Inscribe. El backend es idempotente: si ya estaba, responde 200 con
+  /// `already_enrolled`.
+  Future<void> enroll(int courseId) => _api.guard(() async {
+        final response =
+            await _api.dio.post<dynamic>('/courses/$courseId/enroll');
+        _api.unwrap(response);
+      });
+
+  Future<void> cancelEnrollment(int courseId) => _api.guard(() async {
+        final response =
+            await _api.dio.delete<dynamic>('/courses/$courseId/enroll');
         _api.unwrap(response);
       });
 

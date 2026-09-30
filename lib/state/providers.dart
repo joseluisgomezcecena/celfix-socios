@@ -6,6 +6,7 @@ import '../api/auth_api.dart';
 import '../api/customer_api.dart';
 import '../api/models/app_designs.dart';
 import '../api/models/benefit.dart';
+import '../api/models/course.dart';
 import '../api/models/customer.dart';
 import '../api/models/location.dart';
 import '../api/models/promo.dart';
@@ -14,6 +15,7 @@ import '../api/models/purchase_detail.dart';
 import '../api/models/repair_order.dart';
 import '../api/public_api.dart';
 import '../utils/secure_storage.dart';
+import 'auth_provider.dart';
 
 // --- Infraestructura -------------------------------------------------------
 
@@ -73,6 +75,38 @@ final benefitsProvider = FutureProvider<List<Benefit>>((ref) {
   final locationId = ref.watch(selectedLocationProvider);
   return ref.watch(publicApiProvider).benefits(locationId: locationId);
 });
+
+// --- Cursos ----------------------------------------------------------------
+
+final coursesProvider = FutureProvider<List<Course>>((ref) {
+  final locationId = ref.watch(selectedLocationProvider);
+  return ref.watch(publicApiProvider).courses(locationId: locationId);
+});
+
+/// Inscripciones del socio. Vacío si no hay sesión: sin token el endpoint
+/// devolvería 401 y tumbaría la pantalla de cursos.
+final myCoursesProvider = FutureProvider<List<Course>>((ref) {
+  final isAuthenticated = ref.watch(authProvider).isAuthenticated;
+  if (!isAuthenticated) return Future.value(const <Course>[]);
+  return ref.watch(customerApiProvider).myCourses();
+});
+
+/// Ids en los que el socio está inscrito, listos para cruzar contra la lista
+/// pública. Es un AsyncValue a propósito: mientras no resuelva, la UI no debe
+/// decidir el botón o mostraría "Inscribirme" a alguien que ya está inscrito.
+final enrolledCourseIdsProvider = Provider<AsyncValue<Set<int>>>((ref) {
+  return ref
+      .watch(myCoursesProvider)
+      .whenData((courses) => courses.map((course) => course.id).toSet());
+});
+
+/// Invalida las dos listas tras inscribir o cancelar, para que el cupo y el
+/// botón se actualicen juntos. Sirve igual desde un provider (Ref) que desde
+/// un widget (WidgetRef): ambos exponen invalidate.
+void refreshCourses(WidgetRef ref) {
+  ref.invalidate(coursesProvider);
+  ref.invalidate(myCoursesProvider);
+}
 
 // --- Datos del cliente -----------------------------------------------------
 

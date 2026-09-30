@@ -1,6 +1,7 @@
 import 'api_client.dart';
 import 'models/app_designs.dart';
 import 'models/benefit.dart';
+import 'models/course.dart';
 import 'models/json.dart';
 import 'models/location.dart';
 import 'models/promo.dart';
@@ -34,6 +35,21 @@ class PublicApi {
         );
         final json = _api.unwrap(response);
         return asMapList(json['data']).map(Promo.fromJson).toList();
+      });
+
+  /// Cursos activos. Por default omite los que ya terminaron.
+  Future<List<Course>> courses({int? locationId, bool includePast = false}) =>
+      _api.guard(() async {
+        final response = await _api.dio.get<dynamic>(
+          '/courses',
+          queryParameters: {
+            'location_id': ?locationId,
+            'include_past': includePast ? 1 : 0,
+          },
+        );
+        return asMapList(_api.unwrap(response)['data'])
+            .map(Course.fromJson)
+            .toList();
       });
 
   Future<List<Benefit>> benefits({int? locationId}) => _api.guard(() async {

@@ -13,6 +13,8 @@ class Fmt {
   static final _longDate = DateFormat("d 'de' MMMM 'de' y", 'es_MX');
   static final _shortDate = DateFormat('d MMM y', 'es_MX');
   static final _dateTime = DateFormat("d MMM y, h:mm a", 'es_MX');
+  static final _courseDay = DateFormat("EEEE d 'de' MMMM", 'es_MX');
+  static final _time = DateFormat('h:mm a', 'es_MX');
 
   static String money(double value) => _currency.format(value);
 
@@ -24,6 +26,28 @@ class Fmt {
 
   static String dateTime(DateTime? date) =>
       date == null ? '—' : _dateTime.format(date);
+
+  /// "Miércoles 15 de octubre · 10:00 a. m. a 1:00 p. m."
+  ///
+  /// Si inicio y fin caen el mismo día, la fecha no se repite.
+  static String courseSchedule(DateTime? start, DateTime? end) {
+    if (start == null) return 'Fecha por confirmar';
+
+    final day = _capitalize(_courseDay.format(start));
+    if (end == null) return '$day · ${_time.format(start)}';
+
+    final sameDay = start.year == end.year &&
+        start.month == end.month &&
+        start.day == end.day;
+    if (sameDay) {
+      return '$day · ${_time.format(start)} a ${_time.format(end)}';
+    }
+    return '$day ${_time.format(start)} — '
+        '${_capitalize(_courseDay.format(end))} ${_time.format(end)}';
+  }
+
+  static String _capitalize(String value) =>
+      value.isEmpty ? value : value[0].toUpperCase() + value.substring(1);
 
   /// Para strings que ya vienen del backend en formato MySQL datetime.
   static String rawDateTime(String? raw) {
